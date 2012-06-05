@@ -59,7 +59,4 @@ The following exception is thrown when opening the shared resource:
          at System.Threading.ThreadHelper.ThreadStart()
     InnerException: 
       
-
-
-
-http://msdn.microsoft.com/en-us/library/ee913554(v=vs.85).aspx
+Please feel free to jump in and help fixing this :)
