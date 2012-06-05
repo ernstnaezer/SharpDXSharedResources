@@ -84,6 +84,10 @@
             // The 1st graphics adapter
             var adapter1 = factory1.GetAdapter1(0);
 
+            // ---------------------------------------------------------------------------------------------
+            // Setup direct 3d version 11. This context will be used to display the combined elements
+            // ---------------------------------------------------------------------------------------------
+
             var description = new SwapChainDescription
                            {
                                BufferCount = 1,
@@ -110,7 +114,7 @@
             context.Rasterizer.SetViewports(viewport);
 
             // ---------------------------------------------------------------------------------------------
-            //
+            // Setup direct 3d version 10 as a bridge between the 2d and 3d world
             // ---------------------------------------------------------------------------------------------
 
             // Create the DirectX11 texture2D.  This texture will be shared with the DirectX10
@@ -143,26 +147,12 @@
             var mutexD3D11 = new KeyedMutex(textureD3D11.NativePointer);
 
             // ---------------------------------------------------------------------------------------------
-            //
+            // Setup Direct 2d
             // ---------------------------------------------------------------------------------------------
 
             // Direct2D Factory
             var factory2D = new SharpDX.Direct2D1.Factory(FactoryType.SingleThreaded, DebugLevel.Information);
-
-            var ellipse = new EllipseGeometry(factory2D, new Ellipse(new PointF(_form.Width/2.0f, _form.Height/2.0f), _form.Width/2.0f - 100, _form.Height/2.0f - 100));
-
-            // Populate a PathGeometry from Ellipse tessellation 
-            var tesselatedGeometry = new PathGeometry(factory2D);
-            _geometrySink = tesselatedGeometry.Open();
-            
-            // Force RoundLineJoin otherwise the tesselated looks buggy at line joins
-            _geometrySink.SetSegmentFlags(PathSegment.ForceRoundLineJoin);
-
-            // Tesselate the ellipse to our TessellationSink
-            ellipse.Tessellate(1, this);
-
-            _geometrySink.Close();
-            
+           
             //using (var res11 = RenderTarget.QueryInterface<SharpDX.DXGI.Resource>())
             //using (var res10 = _device101.OpenSharedResource<SharpDX.DXGI.Resource>(res11.SharedHandle))
             //using (var surface = res10.QueryInterface<Surface>())
@@ -190,7 +180,7 @@
             var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
 
             // ---------------------------------------------------------------------------------------------------
-            //
+            // Setup the rendering data
             // ---------------------------------------------------------------------------------------------------
 
             // Load Effect. This includes both the vertex and pixel shaders.
@@ -245,7 +235,29 @@
             bsd.RenderTarget[0].RenderTargetWriteMask = ColorWriteMaskFlags.All;
             
             var blendStateTransparent = new BlendState(_device11, bsd);
-            
+
+            // ---------------------------------------------------------------------------------------------------
+            // Create and tesselate an ellipse
+            // ---------------------------------------------------------------------------------------------------
+
+            var ellipse = new EllipseGeometry(factory2D, new Ellipse(new PointF(_form.Width / 2.0f, _form.Height / 2.0f), _form.Width / 2.0f - 100, _form.Height / 2.0f - 100));
+
+            // Populate a PathGeometry from Ellipse tessellation 
+            var tesselatedGeometry = new PathGeometry(factory2D);
+            _geometrySink = tesselatedGeometry.Open();
+
+            // Force RoundLineJoin otherwise the tesselated looks buggy at line joins
+            _geometrySink.SetSegmentFlags(PathSegment.ForceRoundLineJoin);
+
+            // Tesselate the ellipse to our TessellationSink
+            ellipse.Tessellate(1, this);
+
+            _geometrySink.Close();
+
+            // ---------------------------------------------------------------------------------------------------
+            // Main rendering loop
+            // ---------------------------------------------------------------------------------------------------
+
             // Main loop
             RenderLoop
                 .Run(_form,
