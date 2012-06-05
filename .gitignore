@@ -1,0 +1,7 @@
+/Combined2DAnd3D/bin/
+/Combined2DAnd3D/obj/
+/Combined2DAnd3D/*.user
+/Combined2DAnd3D/*.suo
+*.suo
+*.user
+/_ReSharper.*
