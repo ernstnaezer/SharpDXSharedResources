@@ -8,7 +8,7 @@ The code is ported from / based on a SlimDX sample you can find here: http://www
 
 Exception
 ====
-!! Please note that the current code is not working yet. 
+!! Please note that the current code is not working yet !!
 
 The following exception is thrown when opening the shared resource:
   
