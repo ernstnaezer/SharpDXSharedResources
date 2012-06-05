@@ -1,13 +1,13 @@
 Combined resource between direct 2d and direct 3d (v11)
---
-This is a 'one file' example of a combined direct 2D and direct 3D shared texture.
+=====
+This is a 'one file' example of a combined direct 2D and direct 3D shared texture using SharpDX.
 
 Origin
-==
+----
 The code is ported from / based on a SlimDX sample you can find here: http://www.aaronblog.us/?p=36
 
 Exception
---
+====
 !! Please note that the current code is not working yet. 
 
 The following exception is thrown when opening the shared resource:
