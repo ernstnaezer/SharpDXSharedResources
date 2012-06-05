@@ -8,27 +8,28 @@ The code is ported from / based on a SlimDX sample you can find here: http://www
 
 Exception
 --
-!!Please note that the current code is not working yet. 
+!! Please note that the current code is not working yet. 
 
-The following exception is thrown when opening the shared resource.
+The following exception is thrown when opening the shared resource:
+  
+    SharpDX.SharpDXException was unhandled
+    HResult=-2147024809
+    Message=HRESULT: [0x80070057], Module: [Unknown], ApiCode: [Unknown/Unknown], Message: The parameter is incorrect.
 
-SharpDX.SharpDXException was unhandled
-  HResult=-2147024809
-  Message=HRESULT: [0x80070057], Module: [Unknown], ApiCode: [Unknown/Unknown], Message: The parameter is incorrect.
-
-  Source=SharpDX
-  StackTrace:
-       at SharpDX.Result.CheckError()
-       at SharpDX.Direct3D10.Device.OpenSharedResource(IntPtr hResource, Guid returnedInterface, IntPtr& resourceOut)
-       at SharpDX.Direct3D10.Device.OpenSharedResource[T](IntPtr resourceHandle)
-       at Combined2DAnd3D.Program.Run() in d:\Working\Combined2DAnd3D\Combined2DAnd3D\Program.cs:line 140
-       at Combined2DAnd3D.Program.Main(String[] args) in d:\Working\Combined2DAnd3D\Combined2DAnd3D\Program.cs:line 325
-       at System.AppDomain._nExecuteAssembly(RuntimeAssembly assembly, String[] args)
-       at System.AppDomain.ExecuteAssembly(String assemblyFile, Evidence assemblySecurity, String[] args)
-       at Microsoft.VisualStudio.HostingProcess.HostProc.RunUsersAssembly()
-       at System.Threading.ThreadHelper.ThreadStart_Context(Object state)
-       at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
-       at System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
-       at System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state)
-       at System.Threading.ThreadHelper.ThreadStart()
-  InnerException: 
+    Source=SharpDX
+    StackTrace:
+         at SharpDX.Result.CheckError()
+         at SharpDX.Direct3D10.Device.OpenSharedResource(IntPtr hResource, Guid returnedInterface, IntPtr& resourceOut)
+         at SharpDX.Direct3D10.Device.OpenSharedResource[T](IntPtr resourceHandle)
+         at Combined2DAnd3D.Program.Run() in d:\Working\Combined2DAnd3D\Combined2DAnd3D\Program.cs:line 140
+         at Combined2DAnd3D.Program.Main(String[] args) in d:\Working\Combined2DAnd3D\Combined2DAnd3D\Program.cs:line 325
+         at System.AppDomain._nExecuteAssembly(RuntimeAssembly assembly, String[] args)
+         at System.AppDomain.ExecuteAssembly(String assemblyFile, Evidence assemblySecurity, String[] args)
+         at Microsoft.VisualStudio.HostingProcess.HostProc.RunUsersAssembly()
+         at System.Threading.ThreadHelper.ThreadStart_Context(Object state)
+         at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+         at System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+         at System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state)
+         at System.Threading.ThreadHelper.ThreadStart()
+    InnerException: 
+      
