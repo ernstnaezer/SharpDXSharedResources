@@ -60,3 +60,15 @@ The following exception is thrown when opening the shared resource:
     InnerException: 
       
 Please feel free to jump in and help fixing this :)
+
+License
+===
+Coded by Aaron Auseth and Ernst Naezer
+
+  Freeware: The author, of this software accepts no responsibility for damages resulting
+  from the use of this product and makes no warranty or representation, either
+  express or implied, including but not limited to, any implied warranty of
+  merchantability or fitness for a particular purpose. This software is provided
+  "AS IS", and you, its user, assume all risks when using it.
+  
+  All I ask is that I be given credit if you use as a tutorial or for educational purposes.
