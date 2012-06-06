@@ -8,20 +8,6 @@ SamplerState g_samLinear
 };
  
 // ------------------------------------------------------
-// A very simple shader
-// ------------------------------------------------------
- 
-float4 SimpleVS(float4 position : POSITION) : SV_POSITION
-{
-	return position;
-}
- 
-float4 SimplePS(float4 position : SV_POSITION) : SV_Target
-{
-	return float4(1.0f, 1.0f, 0.0f, 1.0f);
-}
- 
-// ------------------------------------------------------
 // A shader that accepts Position and Color
 // ------------------------------------------------------
  
@@ -51,7 +37,7 @@ float4 ColorPS( ColorPS_IN input ) : SV_Target
 }
  
 // ------------------------------------------------------
-// A shader that accepts Position and Overlayure
+// A shader that accepts Position and Texture
 // Used as an overlay
 // ------------------------------------------------------
  
@@ -84,16 +70,6 @@ float4 OverlayPS( OverlayPS_IN input ) : SV_Target
 // ------------------------------------------------------
 // Techniques
 // ------------------------------------------------------
- 
-technique11 Simple
-{
-	pass P0
-	{
-		SetGeometryShader( 0 );
-		SetVertexShader( CompileShader( vs_4_0, SimpleVS() ) );
-		SetPixelShader( CompileShader( ps_4_0, SimplePS() ) );
-	}
-}
  
 technique11 Color
 {
