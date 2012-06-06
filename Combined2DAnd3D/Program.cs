@@ -321,6 +321,29 @@
 
                              swapChain.Present(0, PresentFlags.None);
                          });
+
+            // dispose everything
+            vertexBufferColor.Dispose();
+            vertexBufferText.Dispose();
+            layoutColor.Dispose();
+            layoutOverlay.Dispose();
+            effect.Dispose();
+            shaderByteCode.Dispose();
+            renderTarget2D.Dispose();
+            swapChain.Dispose();
+            device11.Dispose();
+            device10.Dispose();
+            mutexD3D10.Dispose();
+            mutexD3D11.Dispose();
+            textureD3D10.Dispose();
+            textureD3D11.Dispose();
+            factory1.Dispose();
+            adapter1.Dispose();
+            sharedResource.Dispose();
+            factory2D.Dispose();
+            surface.Dispose();
+            solidColorBrush.Dispose();
+            blendStateTransparent.Dispose();
         }
 
         private static void Main(string[] args)
