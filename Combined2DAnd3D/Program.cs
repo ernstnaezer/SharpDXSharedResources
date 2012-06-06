@@ -89,20 +89,21 @@
             // ---------------------------------------------------------------------------------------------
 
             var description = new SwapChainDescription
-                           {
-                               BufferCount = 1,
-                               ModeDescription = new ModeDescription(form.Width, form.Height, new Rational(60, 1), Format.R8G8B8A8_UNorm),
-                               IsWindowed = true,
-                               OutputHandle = form.Handle,
-                               SampleDescription = new SampleDescription(1, 0),
-                               SwapEffect = SwapEffect.Discard,
-                               Usage = Usage.RenderTargetOutput
-                           };
+                {
+                    BufferCount = 1,
+                    //ModeDescription = new ModeDescription(form.Width, form.Height, new Rational(60, 1), Format.R8G8B8A8_UNorm),
+                    ModeDescription = new ModeDescription(0, 0, new Rational(60, 1), Format.R8G8B8A8_UNorm),
+                    IsWindowed = true,
+                    OutputHandle = form.Handle,
+                    SampleDescription = new SampleDescription(1, 0),
+                    SwapEffect = SwapEffect.Discard,
+                    Usage = Usage.RenderTargetOutput
+                };
 
             Device11 device11;
             SwapChain swapChain;
 
-            Device11.CreateWithSwapChain(adapter1, DeviceCreationFlags.Debug, description, out device11, out swapChain);
+            Device11.CreateWithSwapChain(adapter1, DeviceCreationFlags.None, description, out device11, out swapChain);
 
             // create a view of our render target, which is the backbuffer of the swap chain we just created
             RenderTargetView renderTargetView;
@@ -120,7 +121,7 @@
             // Setup direct 3d version 10 as a bridge between the 2d and 3d world
             // ---------------------------------------------------------------------------------------------
 
-            var device10 = new Device10(adapter1, SharpDX.Direct3D10.DeviceCreationFlags.BgraSupport | SharpDX.Direct3D10.DeviceCreationFlags.Debug, FeatureLevel.Level_10_1);
+            var device10 = new Device10(adapter1, SharpDX.Direct3D10.DeviceCreationFlags.BgraSupport, FeatureLevel.Level_10_1);
 
             // Create the DirectX11 texture2D.  This texture will be shared with the DirectX10
             // device.  The DirectX10 device will be used to render text onto this texture.  DirectX11
@@ -157,7 +158,9 @@
             // Direct2D Factory
             var factory2D = new SharpDX.Direct2D1.Factory(FactoryType.SingleThreaded, DebugLevel.Information);
 
-            // Query for a IDXGISurface.
+            // Here we bind the texture we're created on our direct3d11 device through the direct3d10 
+            // to the direct 2d render target.... a shared surface
+
             // Direct2D and DirectX10 can interoperate thru DXGI.
             var surface = textureD3D10.AsSurface();
             var rtp = new RenderTargetProperties
@@ -169,7 +172,7 @@
                 };
 
             var renderTarget2D = new RenderTarget(factory2D, surface, rtp);
-            var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
+            var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.Red);
 
             // ---------------------------------------------------------------------------------------------------
             // Setup the rendering data
@@ -209,7 +212,7 @@
             verticesText.Position = 0;
 
             // create the text vertex layout and buffer
-            var layoutText = new InputLayout(device11, effect.GetTechniqueByName("Overlay").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
+            var layoutOverlay = new InputLayout(device11, effect.GetTechniqueByName("Overlay").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
             var vertexBufferText = new Buffer(device11, verticesText, (int)verticesText.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
             verticesText.Close();
 
@@ -232,7 +235,7 @@
             // Create and tesselate an ellipse
             // ---------------------------------------------------------------------------------------------------
 
-            var ellipse = new EllipseGeometry(factory2D, new Ellipse(new PointF(form.Width / 2.0f, form.Height / 2.0f), form.Width / 2.0f - 100, form.Height / 2.0f - 100));
+            var ellipse = new EllipseGeometry(factory2D, new Ellipse(new PointF(form.Width / 2.0f, form.Height / 2.0f), form.Width / 2.0f, form.Height / 2.0f));
 
             // Populate a PathGeometry from Ellipse tessellation 
             var tesselatedGeometry = new PathGeometry(factory2D);
@@ -268,27 +271,28 @@
 
                              //// Draw the triangle
                              //// configure the Input Assembler portion of the pipeline with the vertex data
-                             //context.InputAssembler.InputLayout = layoutColor;
-                             //context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-                             //context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferColor, VertexPositionColor.SizeInBytes, 0));
-                             //context.OutputMerger.BlendState = null;
+                             context.InputAssembler.InputLayout = layoutColor;
+                             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferColor, VertexPositionColor.SizeInBytes, 0));
+                             context.OutputMerger.BlendState = null;
                              var currentTechnique = effect.GetTechniqueByName("Color");
-                             //for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
-                             //{
-                             //    using (var effectPass = currentTechnique.GetPassByIndex(pass))
-                             //    {
-                             //        System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
-                             //        effectPass.Apply(context);
-                             //    }
-                             //    context.Draw(3, 0);
-                             //};
+                             for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
+                             {
+                                 using (var effectPass = currentTechnique.GetPassByIndex(pass))
+                                 {
+                                     System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
+                                     effectPass.Apply(context);
+                                 }
+                                 context.Draw(3, 0);
+                             };
 
                              // Draw Ellipse on the shared Texture2D
                              // Need to Acquire the shared texture for use with DirectX10
                              mutexD3D10.Acquire(0, 100);
                              renderTarget2D.BeginDraw();
                              renderTarget2D.Clear(Colors.Orange);
-                             //renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
+                             renderTarget2D.DrawEllipse(new Ellipse(new DrawingPointF(10,10), 20,20), solidColorBrush, 1, null);
+                             renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
                              renderTarget2D.EndDraw();
                              mutexD3D10.Release(0);
 
@@ -297,7 +301,7 @@
                              mutexD3D11.Acquire(0, 100);
                              var srv = new ShaderResourceView(device11, textureD3D11);
                              effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
-                             context.InputAssembler.InputLayout = layoutText;
+                             context.InputAssembler.InputLayout = layoutOverlay;
                              context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
                              context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
                              context.OutputMerger.BlendState = blendStateTransparent;
@@ -343,7 +347,7 @@
         }
 
         public void Close()
-        {           
+        {
         }
     }
 }
