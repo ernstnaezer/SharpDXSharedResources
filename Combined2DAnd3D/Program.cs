@@ -157,33 +157,19 @@
             // Direct2D Factory
             var factory2D = new SharpDX.Direct2D1.Factory(FactoryType.SingleThreaded, DebugLevel.Information);
 
-            //RenderTarget renderTarget2D;
+            // Query for a IDXGISurface.
+            // Direct2D and DirectX10 can interoperate thru DXGI.
+            var surface = textureD3D10.AsSurface();
+            var rtp = new RenderTargetProperties
+                {
+                    MinLevel = SharpDX.Direct2D1.FeatureLevel.Level_10,
+                    Type = RenderTargetType.Hardware,
+                    Usage = RenderTargetUsage.None,
+                    PixelFormat = new PixelFormat(Format.Unknown, AlphaMode.Premultiplied)
+                };
 
-            //using (var res11 = renderTargetView.QueryInterface<SharpDX.DXGI.Resource>())
-            //using (var res10 = device10.OpenSharedResource<SharpDX.DXGI.Resource>(res11.SharedHandle))
-            //using (var surface = res10.QueryInterface<Surface>())
-            //{
-            //    renderTarget2D = new RenderTarget(
-            //            factory2D,
-            //            surface,
-            //            new RenderTargetProperties(new PixelFormat(Format.Unknown, AlphaMode.Premultiplied))
-            //    );
-            //}
-            //renderTarget2D.AntialiasMode = AntialiasMode.PerPrimitive;
-
-            // New RenderTargetView from the backbuffer
-            //var backBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0);
-
-            //RenderTarget renderTarget2D;
-            //using (var surface = backBuffer.QueryInterface<Surface>())
-            //{
-            //    renderTarget2D = new RenderTarget(factory2D, surface, new RenderTargetProperties(new PixelFormat(Format.Unknown, AlphaMode.Premultiplied)))
-            //                         {
-            //                             AntialiasMode = AntialiasMode.PerPrimitive
-            //                         };
-            //}
-
-            //var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
+            var renderTarget2D = new RenderTarget(factory2D, surface, rtp);
+            var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
 
             // ---------------------------------------------------------------------------------------------------
             // Setup the rendering data
@@ -280,43 +266,13 @@
                              // clear the render target to black
                              context.ClearRenderTargetView(renderTargetView, Colors.DarkSlateGray);
 
-                             // Draw the triangle
-                             // configure the Input Assembler portion of the pipeline with the vertex data
-                             context.InputAssembler.InputLayout = layoutColor;
-                             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferColor, VertexPositionColor.SizeInBytes, 0));
-                             context.OutputMerger.BlendState = null;
+                             //// Draw the triangle
+                             //// configure the Input Assembler portion of the pipeline with the vertex data
+                             //context.InputAssembler.InputLayout = layoutColor;
+                             //context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+                             //context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferColor, VertexPositionColor.SizeInBytes, 0));
+                             //context.OutputMerger.BlendState = null;
                              var currentTechnique = effect.GetTechniqueByName("Color");
-                             for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
-                             {
-                                 using (var effectPass = currentTechnique.GetPassByIndex(pass))
-                                 {
-                                     System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
-                                     effectPass.Apply(context);
-                                 }
-                                 context.Draw(3, 0);
-                             };
-
-                             //// Draw Ellipse on the shared Texture2D
-                             //// Need to Acquire the shared texture for use with DirectX10
-                             //mutexD3D10.Acquire(0, 100);
-                             //renderTarget2D.BeginDraw();
-                             //renderTarget2D.Clear(Colors.Orange);
-                             //renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
-                             //renderTarget2D.EndDraw();
-                             //mutexD3D10.Release(0);
-
-                             //// Draw the shared texture2D onto the screen
-                             //// Need to Aquire the shared texture for use with DirectX11
-                             //mutexD3D11.Acquire(0, 100);
-                             //var srv = new ShaderResourceView(device11, textureD3D11);
-                             //effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
-                             //context.InputAssembler.InputLayout = layoutText;
-                             //context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
-                             //context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
-                             //context.OutputMerger.BlendState = blendStateTransparent;
-                             //currentTechnique = effect.GetTechniqueByName("2DOverlay");
-                             
                              //for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
                              //{
                              //    using (var effectPass = currentTechnique.GetPassByIndex(pass))
@@ -324,10 +280,40 @@
                              //        System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
                              //        effectPass.Apply(context);
                              //    }
-                             //    context.Draw(4, 0);
-                             //}
-                             //srv.Dispose();
-                             //mutexD3D11.Release(0);
+                             //    context.Draw(3, 0);
+                             //};
+
+                             // Draw Ellipse on the shared Texture2D
+                             // Need to Acquire the shared texture for use with DirectX10
+                             mutexD3D10.Acquire(0, 100);
+                             renderTarget2D.BeginDraw();
+                             renderTarget2D.Clear(Colors.Orange);
+                             //renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
+                             renderTarget2D.EndDraw();
+                             mutexD3D10.Release(0);
+
+                             // Draw the shared texture2D onto the screen
+                             // Need to Aquire the shared texture for use with DirectX11
+                             mutexD3D11.Acquire(0, 100);
+                             var srv = new ShaderResourceView(device11, textureD3D11);
+                             effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
+                             context.InputAssembler.InputLayout = layoutText;
+                             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
+                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
+                             context.OutputMerger.BlendState = blendStateTransparent;
+                             currentTechnique = effect.GetTechniqueByName("Overlay");
+
+                             for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
+                             {
+                                 using (var effectPass = currentTechnique.GetPassByIndex(pass))
+                                 {
+                                     System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
+                                     effectPass.Apply(context);
+                                 }
+                                 context.Draw(4, 0);
+                             }
+                             srv.Dispose();
+                             mutexD3D11.Release(0);
 
                              swapChain.Present(0, PresentFlags.None);
                          });
