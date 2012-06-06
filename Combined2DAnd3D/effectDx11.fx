@@ -105,7 +105,7 @@ technique11 Color
 	}
 }
  
-technique11 2DOverlay
+technique11 Overlay
 {
 	pass P0
 	{

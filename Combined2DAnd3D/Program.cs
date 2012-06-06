@@ -105,15 +105,15 @@
             Device11.CreateWithSwapChain(adapter1, DeviceCreationFlags.Debug, description, out device11, out swapChain);
 
             // create a view of our render target, which is the backbuffer of the swap chain we just created
-            RenderTargetView renderTarget;
+            RenderTargetView renderTargetView;
             using (var resource = Resource.FromSwapChain<Texture2D>(swapChain, 0))
-                renderTarget = new RenderTargetView(device11, resource);
+                renderTargetView = new RenderTargetView(device11, resource);
 
             // setting a viewport is required if you want to actually see anything
             var context = device11.ImmediateContext;
             
             var viewport = new Viewport(0.0f, 0.0f, form.ClientSize.Width, form.ClientSize.Height);
-            context.OutputMerger.SetTargets(renderTarget);
+            context.OutputMerger.SetTargets(renderTargetView);
             context.Rasterizer.SetViewports(viewport);
 
             // ---------------------------------------------------------------------------------------------
@@ -156,12 +156,14 @@
 
             // Direct2D Factory
             var factory2D = new SharpDX.Direct2D1.Factory(FactoryType.SingleThreaded, DebugLevel.Information);
-           
-            //using (var res11 = RenderTarget.QueryInterface<SharpDX.DXGI.Resource>())
-            //using (var res10 = _device101.OpenSharedResource<SharpDX.DXGI.Resource>(res11.SharedHandle))
+
+            //RenderTarget renderTarget2D;
+
+            //using (var res11 = renderTargetView.QueryInterface<SharpDX.DXGI.Resource>())
+            //using (var res10 = device10.OpenSharedResource<SharpDX.DXGI.Resource>(res11.SharedHandle))
             //using (var surface = res10.QueryInterface<Surface>())
             //{
-            //    var renderTarget2D = new RenderTarget(
+            //    renderTarget2D = new RenderTarget(
             //            factory2D,
             //            surface,
             //            new RenderTargetProperties(new PixelFormat(Format.Unknown, AlphaMode.Premultiplied))
@@ -170,18 +172,18 @@
             //renderTarget2D.AntialiasMode = AntialiasMode.PerPrimitive;
 
             // New RenderTargetView from the backbuffer
-            var backBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0);
+            //var backBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0);
 
-            RenderTarget renderTarget2D;
-            using (var surface = backBuffer.QueryInterface<Surface>())
-            {
-                renderTarget2D = new RenderTarget(factory2D, surface, new RenderTargetProperties(new PixelFormat(Format.Unknown, AlphaMode.Premultiplied)))
-                                     {
-                                         AntialiasMode = AntialiasMode.PerPrimitive
-                                     };
-            }
+            //RenderTarget renderTarget2D;
+            //using (var surface = backBuffer.QueryInterface<Surface>())
+            //{
+            //    renderTarget2D = new RenderTarget(factory2D, surface, new RenderTargetProperties(new PixelFormat(Format.Unknown, AlphaMode.Premultiplied)))
+            //                         {
+            //                             AntialiasMode = AntialiasMode.PerPrimitive
+            //                         };
+            //}
 
-            var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
+            //var solidColorBrush = new SolidColorBrush(renderTarget2D, Colors.White);
 
             // ---------------------------------------------------------------------------------------------------
             // Setup the rendering data
@@ -221,7 +223,7 @@
             verticesText.Position = 0;
 
             // create the text vertex layout and buffer
-            var layoutText = new InputLayout(device11, effect.GetTechniqueByName("Text").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
+            var layoutText = new InputLayout(device11, effect.GetTechniqueByName("Overlay").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
             var vertexBufferText = new Buffer(device11, verticesText, (int)verticesText.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
             verticesText.Close();
 
@@ -262,13 +264,21 @@
             // Main rendering loop
             // ---------------------------------------------------------------------------------------------------
 
+            bool first = true;
+
             // Main loop
             RenderLoop
                 .Run(form,
                      () =>
                          {
+                             if(first)
+                             {
+                                 form.Activate();
+                                 first = false;
+                             }
+                                 
                              // clear the render target to black
-                             context.ClearRenderTargetView(renderTarget, Colors.BlueViolet);
+                             context.ClearRenderTargetView(renderTargetView, Colors.DarkSlateGray);
 
                              // Draw the triangle
                              // configure the Input Assembler portion of the pipeline with the vertex data
@@ -287,37 +297,37 @@
                                  context.Draw(3, 0);
                              };
 
-                             // Draw Ellipse on the shared Texture2D
-                             // Need to Acquire the shared texture for use with DirectX10
-                             mutexD3D10.Acquire(0, 100);
-                             renderTarget2D.BeginDraw();
-                             renderTarget2D.Clear(Colors.Orange);
-                             renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
-                             renderTarget2D.EndDraw();
-                             mutexD3D10.Release(0);
+                             //// Draw Ellipse on the shared Texture2D
+                             //// Need to Acquire the shared texture for use with DirectX10
+                             //mutexD3D10.Acquire(0, 100);
+                             //renderTarget2D.BeginDraw();
+                             //renderTarget2D.Clear(Colors.Orange);
+                             //renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
+                             //renderTarget2D.EndDraw();
+                             //mutexD3D10.Release(0);
 
-                             // Draw the shared texture2D onto the screen
-                             // Need to Aquire the shared texture for use with DirectX11
-                             mutexD3D11.Acquire(0, 100);
-                             var srv = new ShaderResourceView(device11, textureD3D11);
-                             effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
-                             context.InputAssembler.InputLayout = layoutText;
-                             context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
-                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
-                             context.OutputMerger.BlendState = blendStateTransparent;
-                             currentTechnique = effect.GetTechniqueByName("2DOverlay");
+                             //// Draw the shared texture2D onto the screen
+                             //// Need to Aquire the shared texture for use with DirectX11
+                             //mutexD3D11.Acquire(0, 100);
+                             //var srv = new ShaderResourceView(device11, textureD3D11);
+                             //effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
+                             //context.InputAssembler.InputLayout = layoutText;
+                             //context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
+                             //context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
+                             //context.OutputMerger.BlendState = blendStateTransparent;
+                             //currentTechnique = effect.GetTechniqueByName("2DOverlay");
                              
-                             for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
-                             {
-                                 using (var effectPass = currentTechnique.GetPassByIndex(pass))
-                                 {
-                                     System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
-                                     effectPass.Apply(context);
-                                 }
-                                 context.Draw(4, 0);
-                             }
-                             srv.Dispose();
-                             mutexD3D11.Release(0);
+                             //for (var pass = 0; pass < currentTechnique.Description.PassCount; ++pass)
+                             //{
+                             //    using (var effectPass = currentTechnique.GetPassByIndex(pass))
+                             //    {
+                             //        System.Diagnostics.Debug.Assert(effectPass.IsValid, "Invalid EffectPass");
+                             //        effectPass.Apply(context);
+                             //    }
+                             //    context.Draw(4, 0);
+                             //}
+                             //srv.Dispose();
+                             //mutexD3D11.Release(0);
 
                              swapChain.Present(0, PresentFlags.None);
                          });
