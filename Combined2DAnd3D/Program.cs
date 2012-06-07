@@ -1,7 +1,6 @@
 ﻿namespace Combined2DAnd3D
 {
     using System;
-    using System.Drawing;
     using System.Windows.Forms;
     using SharpDX;
     using SharpDX.D3DCompiler;
@@ -35,7 +34,7 @@
             var adapter1 = factory1.GetAdapter1(0);
 
             // ---------------------------------------------------------------------------------------------
-            // Setup direct 3d version 11. This context will be used to display the combined elements
+            // Setup direct 3d version 11. It's context will be used to combine the two elements
             // ---------------------------------------------------------------------------------------------
 
             var description = new SwapChainDescription
@@ -67,29 +66,31 @@
             context.OutputMerger.SetTargets(renderTargetView);
             context.Rasterizer.SetViewports(viewport);
 
+            //
+            // Create the DirectX11 texture2D. This texture will be shared with the DirectX10 device. 
+            //
+            // The DirectX10 device will be used to render text onto this texture.  
+            // DirectX11 will then draw this texture (blended) onto the screen.
+            // The KeyedMutex flag is required in order to share this resource between the two devices.
+            var textureD3D11 = new Texture2D(device11, new Texture2DDescription
+            {
+                Width = form.ClientSize.Width,
+                Height = form.ClientSize.Height,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = Format.B8G8R8A8_UNorm,
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Default,
+                BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource,
+                CpuAccessFlags = CpuAccessFlags.None,
+                OptionFlags = ResourceOptionFlags.SharedKeyedmutex
+            });
+
             // ---------------------------------------------------------------------------------------------
-            // Setup direct 3d version 10 as a bridge between the 2d and 3d world
+            // Setup a direct 3d version 10.1 adapter
             // ---------------------------------------------------------------------------------------------
             var device10 = new Device10(adapter1, SharpDX.Direct3D10.DeviceCreationFlags.BgraSupport, FeatureLevel.Level_10_1);
 
-            // Create the DirectX11 texture2D.  This texture will be shared with the DirectX10
-            // device.  The DirectX10 device will be used to render text onto this texture.  DirectX11
-            // will then draw this texture (blended) onto the screen.
-            // The KeyedMutex flag is required in order to share this resource.
-            var textureD3D11 = new Texture2D(device11, new Texture2DDescription
-                                                            {
-                                                                Width = form.ClientSize.Width,
-                                                                Height = form.ClientSize.Height,
-                                                                MipLevels = 1,
-                                                                ArraySize = 1,
-                                                                Format = Format.B8G8R8A8_UNorm,
-                                                                SampleDescription = new SampleDescription(1, 0),
-                                                                Usage = ResourceUsage.Default,
-                                                                BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource,
-                                                                CpuAccessFlags = CpuAccessFlags.None,
-                                                                OptionFlags = ResourceOptionFlags.SharedKeyedmutex
-                                                            });
-         
             // ---------------------------------------------------------------------------------------------
             // Setup Direct 2d
             // ---------------------------------------------------------------------------------------------
@@ -97,14 +98,12 @@
             // Direct2D Factory
             var factory2D = new SharpDX.Direct2D1.Factory(FactoryType.SingleThreaded, DebugLevel.Information);
 
-            // Here we bind the texture we're created on our direct3d11 device through the direct3d10 
-            // to the direct 2d render target.... a shared surface
-
+            // Here we bind the texture we've created on our direct3d11 device through the direct3d10 
+            // to the direct 2d render target.... 
             var sharedResource = textureD3D11.QueryInterface<SharpDX.DXGI.Resource>();
             var textureD3D10 = device10.OpenSharedResource<SharpDX.Direct3D10.Texture2D>(sharedResource.SharedHandle);
 
-            var surface = textureD3D10.AsSurface();
-            
+            var surface = textureD3D10.AsSurface();           
             var rtp = new RenderTargetProperties
                 {
                     MinLevel = SharpDX.Direct2D1.FeatureLevel.Level_10,
@@ -141,7 +140,7 @@
             var vertexBufferColor = new Buffer(device11, verticesTriangle, (int)verticesTriangle.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
             verticesTriangle.Close();
 
-            // create text vertex data, making sure to rewind the stream afterward
+            // create overlay vertex data, making sure to rewind the stream afterward
             // Top Left of screen is -1, +1
             // Bottom Right of screen is +1, -1
             var verticesText = new DataStream(VertexPositionTexture.SizeInBytes * 4, true, true);
@@ -152,13 +151,13 @@
 
             verticesText.Position = 0;
 
-            // create the text vertex layout and buffer
+            // create the overlay vertex layout and buffer
             var layoutOverlay = new InputLayout(device11, effect.GetTechniqueByName("Overlay").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
             var vertexBufferOverlay = new Buffer(device11, verticesText, (int)verticesText.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
             verticesText.Close();
 
             // Think of the shared textureD3D10 as an overlay.
-            // The overlay needs to show the text but let the underlying triangle (or whatever)
+            // The overlay needs to show the 2d content but let the underlying triangle (or whatever)
             // show thru, which is accomplished by blending.
             var bsd = new BlendStateDescription();
             bsd.RenderTarget[0].IsBlendEnabled = true;
@@ -191,15 +190,18 @@
             _geometrySink.Close();
 
             // ---------------------------------------------------------------------------------------------------
-            // Main rendering loop
+            // Acquire the mutexes. These are needed to assure the device in use has exclusive access to the surface
             // ---------------------------------------------------------------------------------------------------
 
             var device10Mutex = textureD3D10.QueryInterface<KeyedMutex>();
             var device11Mutex = textureD3D11.QueryInterface<KeyedMutex>();
 
+            // ---------------------------------------------------------------------------------------------------
+            // Main rendering loop
+            // ---------------------------------------------------------------------------------------------------
+
             bool first = true;
 
-            // Main loop
             RenderLoop
                 .Run(form,
                      () =>
@@ -238,7 +240,7 @@
                              renderTarget2D.EndDraw();
                              device10Mutex.Release(0);
 
-                             // Draw the shared texture2D onto the screen
+                             // Draw the shared texture2D onto the screen, blending the 2d content in
                              device11Mutex.Acquire(0, 100);
                              var srv = new ShaderResourceView(device11, textureD3D11);
                              effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);

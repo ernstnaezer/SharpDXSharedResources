@@ -31,14 +31,10 @@ The code is ported from / based on a SlimDX sample you can find here: http://www
 Resources
 ---
 
+* http://sharpdx.org/forum/5-api-usage/164-d3d11-d2d1-direct3d-and-2d-interop
 * http://msdn.microsoft.com/en-us/library/ee913554(v=vs.85).aspx
 * http://www.aaronblog.us/?p=36
-* http://sharpdx.org/forum/5-api-usage/164-d3d11-d2d1-direct3d-and-2d-interop
 * http://stackoverflow.com/questions/4485265/cant-create-direct2d-dxgi-surface
-
-PLEASE NOTE
-====
-There is still an issue with blending the two images. You can not clear the 2d surface yet.
 
 License
 ===
