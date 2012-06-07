@@ -141,15 +141,11 @@
                                                                 OptionFlags = ResourceOptionFlags.SharedKeyedmutex
                                                             });
 
-            var sharedResource = textureD3D11.QueryInterface<SharpDX.DXGI.Resource>();
-            var textureD3D10 = device10.OpenSharedResource<SharpDX.Direct3D10.Texture2D>(sharedResource.SharedHandle);
-
-            // The KeyedMutex is used just prior to writing to textureD3D11 or textureD3D10.
             // This is how DirectX knows which DirectX (10 or 11) is supposed to be writing
-            // to the shared texture.  The keyedMutex is just defined here, they will be used
-            // a bit later.
-            var mutexD3D10 = new KeyedMutex(textureD3D10.NativePointer);
-            var mutexD3D11 = new KeyedMutex(textureD3D11.NativePointer);
+            // to the shared texture.  
+            var sharedResource = textureD3D11.QueryInterface<SharpDX.DXGI.Resource>();
+            var sharedTexture = device10.OpenSharedResource<SharpDX.Direct3D10.Texture2D>(sharedResource.SharedHandle);
+            var sharedMutex = sharedTexture.QueryInterface<KeyedMutex>();
 
             // ---------------------------------------------------------------------------------------------
             // Setup Direct 2d
@@ -162,7 +158,7 @@
             // to the direct 2d render target.... a shared surface
 
             // Direct2D and DirectX10 can interoperate thru DXGI.
-            var surface = textureD3D10.AsSurface();
+            var surface = sharedTexture.AsSurface();
             var rtp = new RenderTargetProperties
                 {
                     MinLevel = SharpDX.Direct2D1.FeatureLevel.Level_10,
@@ -288,17 +284,17 @@
 
                              // Draw Ellipse on the shared Texture2D
                              // Need to Acquire the shared texture for use with DirectX10
-                             mutexD3D10.Acquire(0, 100);
+                             sharedMutex.Acquire(0, 100);
                              renderTarget2D.BeginDraw();
                              renderTarget2D.Clear(Colors.Orange);
                              renderTarget2D.DrawEllipse(new Ellipse(new DrawingPointF(10,10), 20,20), solidColorBrush, 1, null);
                              renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
                              renderTarget2D.EndDraw();
-                             mutexD3D10.Release(0);
+                             sharedMutex.Release(0);
 
                              // Draw the shared texture2D onto the screen
                              // Need to Aquire the shared texture for use with DirectX11
-                             mutexD3D11.Acquire(0, 100);
+                             sharedMutex.Acquire(0, 100);
                              var srv = new ShaderResourceView(device11, textureD3D11);
                              effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
                              context.InputAssembler.InputLayout = layoutOverlay;
@@ -317,7 +313,7 @@
                                  context.Draw(4, 0);
                              }
                              srv.Dispose();
-                             mutexD3D11.Release(0);
+                             sharedMutex.Release(0);
 
                              swapChain.Present(0, PresentFlags.None);
                          });
@@ -333,9 +329,8 @@
             swapChain.Dispose();
             device11.Dispose();
             device10.Dispose();
-            mutexD3D10.Dispose();
-            mutexD3D11.Dispose();
-            textureD3D10.Dispose();
+            sharedMutex.Dispose();
+            sharedTexture.Dispose();
             textureD3D11.Dispose();
             factory1.Dispose();
             adapter1.Dispose();
