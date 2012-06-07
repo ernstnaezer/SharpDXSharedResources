@@ -64,7 +64,7 @@ OverlayPS_IN OverlayVS( OverlayVS_IN input )
 float4 OverlayPS( OverlayPS_IN input ) : SV_Target
 {
 	float4 color =  g_Overlay.Sample(g_samLinear, input.tex);
-	return color + float4(0.8,0.8,0.8,1);;
+	return color;
 }
  
 // ------------------------------------------------------

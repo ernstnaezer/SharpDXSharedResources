@@ -2,7 +2,6 @@
 {
     using System;
     using System.Drawing;
-    using System.Runtime.InteropServices;
     using System.Windows.Forms;
     using SharpDX;
     using SharpDX.D3DCompiler;
@@ -23,55 +22,6 @@
         : TessellationSink
     {
         private GeometrySink _geometrySink;
-
-        // Vertex Structure
-        // LayoutKind.Sequential is required to ensure the public variables
-        // are written to the datastream in the correct order.
-        [StructLayout(LayoutKind.Sequential)]
-        public struct VertexPositionColor
-        {
-            public Vector4 Position;
-            public Color4 Color;
-            public static readonly InputElement[] inputElements = new[] {
-				new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
-				new InputElement("COLOR",0,Format.R32G32B32A32_Float,16,0)
-			};
-            public static readonly int SizeInBytes = Marshal.SizeOf(typeof(VertexPositionColor));
-            public VertexPositionColor(Vector4 position, Color4 color)
-            {
-                Position = position;
-                Color = color;
-            }
-            public VertexPositionColor(Vector3 position, Color4 color)
-            {
-                Position = new Vector4(position, 1);
-                Color = color;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct VertexPositionTexture
-        {
-            public Vector4 Position;
-            public Vector2 TexCoord;
-
-            public static readonly InputElement[] inputElements = new[] {
-				new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
-				new InputElement("TEXCOORD",0,Format.R32G32_Float, 16 ,0)
-			};
-            public static readonly int SizeInBytes = Marshal.SizeOf(typeof(VertexPositionTexture));
-            public VertexPositionTexture(Vector4 position, Vector2 texCoord)
-            {
-                Position = position;
-                TexCoord = texCoord;
-            }
-            public VertexPositionTexture(Vector3 position, Vector2 texCoord)
-            {
-                Position = new Vector4(position, 1);
-                TexCoord = texCoord;
-            }
-        }
-
 
         public void Run()
         {
@@ -120,7 +70,6 @@
             // ---------------------------------------------------------------------------------------------
             // Setup direct 3d version 10 as a bridge between the 2d and 3d world
             // ---------------------------------------------------------------------------------------------
-
             var device10 = new Device10(adapter1, SharpDX.Direct3D10.DeviceCreationFlags.BgraSupport, FeatureLevel.Level_10_1);
 
             // Create the DirectX11 texture2D.  This texture will be shared with the DirectX10
@@ -129,8 +78,8 @@
             // The KeyedMutex flag is required in order to share this resource.
             var textureD3D11 = new Texture2D(device11, new Texture2DDescription
                                                             {
-                                                                Width = form.Width,
-                                                                Height = form.Height,
+                                                                Width = form.ClientSize.Width,
+                                                                Height = form.ClientSize.Height,
                                                                 MipLevels = 1,
                                                                 ArraySize = 1,
                                                                 Format = Format.B8G8R8A8_UNorm,
@@ -140,13 +89,7 @@
                                                                 CpuAccessFlags = CpuAccessFlags.None,
                                                                 OptionFlags = ResourceOptionFlags.SharedKeyedmutex
                                                             });
-
-            // This is how DirectX knows which DirectX (10 or 11) is supposed to be writing
-            // to the shared texture.  
-            var sharedResource = textureD3D11.QueryInterface<SharpDX.DXGI.Resource>();
-            var sharedTexture = device10.OpenSharedResource<SharpDX.Direct3D10.Texture2D>(sharedResource.SharedHandle);
-            var sharedMutex = sharedTexture.QueryInterface<KeyedMutex>();
-
+         
             // ---------------------------------------------------------------------------------------------
             // Setup Direct 2d
             // ---------------------------------------------------------------------------------------------
@@ -157,13 +100,15 @@
             // Here we bind the texture we're created on our direct3d11 device through the direct3d10 
             // to the direct 2d render target.... a shared surface
 
-            // Direct2D and DirectX10 can interoperate thru DXGI.
-            var surface = sharedTexture.AsSurface();
+            var sharedResource = textureD3D11.QueryInterface<SharpDX.DXGI.Resource>();
+            var textureD3D10 = device10.OpenSharedResource<SharpDX.Direct3D10.Texture2D>(sharedResource.SharedHandle);
+
+            var surface = textureD3D10.AsSurface();
+            
             var rtp = new RenderTargetProperties
                 {
                     MinLevel = SharpDX.Direct2D1.FeatureLevel.Level_10,
                     Type = RenderTargetType.Hardware,
-                    Usage = RenderTargetUsage.None,
                     PixelFormat = new PixelFormat(Format.Unknown, AlphaMode.Premultiplied)
                 };
 
@@ -209,7 +154,7 @@
 
             // create the text vertex layout and buffer
             var layoutOverlay = new InputLayout(device11, effect.GetTechniqueByName("Overlay").GetPassByIndex(0).Description.Signature, VertexPositionTexture.inputElements);
-            var vertexBufferText = new Buffer(device11, verticesText, (int)verticesText.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
+            var vertexBufferOverlay = new Buffer(device11, verticesText, (int)verticesText.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, 0);
             verticesText.Close();
 
             // Think of the shared textureD3D10 as an overlay.
@@ -230,8 +175,8 @@
             // ---------------------------------------------------------------------------------------------------
             // Create and tesselate an ellipse
             // ---------------------------------------------------------------------------------------------------
-
-            var ellipse = new EllipseGeometry(factory2D, new Ellipse(new PointF(form.Width / 2.0f, form.Height / 2.0f), form.Width / 2.0f, form.Height / 2.0f));
+            var center = new DrawingPointF(form.ClientSize.Width/2.0f, form.ClientSize.Height/2.0f);
+            var ellipse = new EllipseGeometry(factory2D, new Ellipse(center, form.ClientSize.Width / 2.0f, form.ClientSize.Height / 2.0f));
 
             // Populate a PathGeometry from Ellipse tessellation 
             var tesselatedGeometry = new PathGeometry(factory2D);
@@ -249,6 +194,9 @@
             // Main rendering loop
             // ---------------------------------------------------------------------------------------------------
 
+            var device10Mutex = textureD3D10.QueryInterface<KeyedMutex>();
+            var device11Mutex = textureD3D11.QueryInterface<KeyedMutex>();
+
             bool first = true;
 
             // Main loop
@@ -265,8 +213,8 @@
                              // clear the render target to black
                              context.ClearRenderTargetView(renderTargetView, Colors.DarkSlateGray);
 
-                             //// Draw the triangle
-                             //// configure the Input Assembler portion of the pipeline with the vertex data
+                             //device11Mutex.Acquire(0, 100);
+                             // Draw the triangle
                              context.InputAssembler.InputLayout = layoutColor;
                              context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
                              context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferColor, VertexPositionColor.SizeInBytes, 0));
@@ -281,25 +229,24 @@
                                  }
                                  context.Draw(3, 0);
                              };
+                             //device11Mutex.Release(0);
 
                              // Draw Ellipse on the shared Texture2D
-                             // Need to Acquire the shared texture for use with DirectX10
-                             sharedMutex.Acquire(0, 100);
+                             device10Mutex.Acquire(0, 100);
                              renderTarget2D.BeginDraw();
                              renderTarget2D.Clear(Colors.Orange);
-                             renderTarget2D.DrawEllipse(new Ellipse(new DrawingPointF(10,10), 20,20), solidColorBrush, 1, null);
                              renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
+                             renderTarget2D.DrawEllipse(new Ellipse(center, 200, 200), solidColorBrush, 20, null);
                              renderTarget2D.EndDraw();
-                             sharedMutex.Release(0);
+                             device10Mutex.Release(0);
 
                              // Draw the shared texture2D onto the screen
-                             // Need to Aquire the shared texture for use with DirectX11
-                             sharedMutex.Acquire(0, 100);
+                             device11Mutex.Acquire(0, 100);
                              var srv = new ShaderResourceView(device11, textureD3D11);
                              effect.GetVariableByName("g_Overlay").AsShaderResource().SetResource(srv);
                              context.InputAssembler.InputLayout = layoutOverlay;
                              context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
-                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferText, VertexPositionTexture.SizeInBytes, 0));
+                             context.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBufferOverlay, VertexPositionTexture.SizeInBytes, 0));
                              context.OutputMerger.BlendState = blendStateTransparent;
                              currentTechnique = effect.GetTechniqueByName("Overlay");
 
@@ -313,14 +260,14 @@
                                  context.Draw(4, 0);
                              }
                              srv.Dispose();
-                             sharedMutex.Release(0);
+                             device11Mutex.Release(0);
 
                              swapChain.Present(0, PresentFlags.None);
                          });
 
             // dispose everything
             vertexBufferColor.Dispose();
-            vertexBufferText.Dispose();
+            vertexBufferOverlay.Dispose();
             layoutColor.Dispose();
             layoutOverlay.Dispose();
             effect.Dispose();
@@ -329,8 +276,8 @@
             swapChain.Dispose();
             device11.Dispose();
             device10.Dispose();
-            sharedMutex.Dispose();
-            sharedTexture.Dispose();
+            //sharedMutex.Dispose();
+            textureD3D10.Dispose();
             textureD3D11.Dispose();
             factory1.Dispose();
             adapter1.Dispose();
