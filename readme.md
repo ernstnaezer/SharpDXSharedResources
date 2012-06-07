@@ -2,13 +2,7 @@ SharpDX Shared surface example
 =====
 This is a 'one file' example of a shared surfce between two direct X devices written in C# / SharpDX. Windows 8 Direct2D.1 has native support for this but as long as you are on Windows7 you need some trickery.
 
-PLEASE NOTE
-====
-!! the current code is not working yet !!
-
-It looks like all the devices are created correctly and we can draw the triangle. But rendering to the 2d surface doesn't work yet. But hey, at least the nasty exception is gone!
-      
-Please feel free to jump in and help fixing this :)
+![the example](https://github.com/enix/SharpDXSharedResources/raw/master/Artifacts/shared_surfaces.png "this is how it should look")
 
 Details
 ---
@@ -41,6 +35,10 @@ Resources
 * http://www.aaronblog.us/?p=36
 * http://sharpdx.org/forum/5-api-usage/164-d3d11-d2d1-direct3d-and-2d-interop
 * http://stackoverflow.com/questions/4485265/cant-create-direct2d-dxgi-surface
+
+PLEASE NOTE
+====
+There is still an issue with blending the two images. You can not clear the 2d surface yet.
 
 License
 ===
