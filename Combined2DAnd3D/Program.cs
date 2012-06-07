@@ -162,8 +162,8 @@
             // show thru, which is accomplished by blending.
             var bsd = new BlendStateDescription();
             bsd.RenderTarget[0].IsBlendEnabled = true;
-            bsd.RenderTarget[0].SourceBlend = BlendOption.SourceAlpha;
-            bsd.RenderTarget[0].DestinationBlend = BlendOption.InverseSourceAlpha;
+            bsd.RenderTarget[0].SourceBlend = BlendOption.SourceColor;
+            bsd.RenderTarget[0].DestinationBlend = BlendOption.BlendFactor;
             bsd.RenderTarget[0].BlendOperation = BlendOperation.Add;
             bsd.RenderTarget[0].SourceAlphaBlend = BlendOption.One;
             bsd.RenderTarget[0].DestinationAlphaBlend = BlendOption.Zero;
@@ -232,7 +232,7 @@
                              // Draw Ellipse on the shared Texture2D
                              device10Mutex.Acquire(0, 100);
                              renderTarget2D.BeginDraw();
-                             //renderTarget2D.Clear(Colors.Black);
+                             renderTarget2D.Clear(Colors.Black);
                              renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
                              renderTarget2D.DrawEllipse(new Ellipse(center, 200, 200), solidColorBrush, 20, null);
                              renderTarget2D.EndDraw();
