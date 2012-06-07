@@ -41,13 +41,13 @@
             var description = new SwapChainDescription
                 {
                     BufferCount = 1,
-                    //ModeDescription = new ModeDescription(form.Width, form.Height, new Rational(60, 1), Format.R8G8B8A8_UNorm),
                     ModeDescription = new ModeDescription(0, 0, new Rational(60, 1), Format.R8G8B8A8_UNorm),
                     IsWindowed = true,
                     OutputHandle = form.Handle,
                     SampleDescription = new SampleDescription(1, 0),
                     SwapEffect = SwapEffect.Discard,
-                    Usage = Usage.RenderTargetOutput
+                    Usage = Usage.RenderTargetOutput,
+                    Flags = SwapChainFlags.AllowModeSwitch
                 };
 
             Device11 device11;
@@ -213,7 +213,6 @@
                              // clear the render target to black
                              context.ClearRenderTargetView(renderTargetView, Colors.DarkSlateGray);
 
-                             //device11Mutex.Acquire(0, 100);
                              // Draw the triangle
                              context.InputAssembler.InputLayout = layoutColor;
                              context.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
@@ -229,12 +228,11 @@
                                  }
                                  context.Draw(3, 0);
                              };
-                             //device11Mutex.Release(0);
 
                              // Draw Ellipse on the shared Texture2D
                              device10Mutex.Acquire(0, 100);
                              renderTarget2D.BeginDraw();
-                             renderTarget2D.Clear(Colors.Orange);
+                             //renderTarget2D.Clear(Colors.Black);
                              renderTarget2D.DrawGeometry(tesselatedGeometry, solidColorBrush);
                              renderTarget2D.DrawEllipse(new Ellipse(center, 200, 200), solidColorBrush, 20, null);
                              renderTarget2D.EndDraw();
@@ -276,7 +274,6 @@
             swapChain.Dispose();
             device11.Dispose();
             device10.Dispose();
-            //sharedMutex.Dispose();
             textureD3D10.Dispose();
             textureD3D11.Dispose();
             factory1.Dispose();
@@ -286,6 +283,9 @@
             surface.Dispose();
             solidColorBrush.Dispose();
             blendStateTransparent.Dispose();
+
+            device10Mutex.Dispose();
+            device11Mutex.Dispose();
         }
 
         private static void Main(string[] args)
