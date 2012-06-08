@@ -8,20 +8,6 @@ SamplerState g_samLinear
 };
  
 // ------------------------------------------------------
-// A very simple shader
-// ------------------------------------------------------
- 
-float4 SimpleVS(float4 position : POSITION) : SV_POSITION
-{
-	return position;
-}
- 
-float4 SimplePS(float4 position : SV_POSITION) : SV_Target
-{
-	return float4(1.0f, 1.0f, 0.0f, 1.0f);
-}
- 
-// ------------------------------------------------------
 // A shader that accepts Position and Color
 // ------------------------------------------------------
  
@@ -52,30 +38,30 @@ float4 ColorPS( ColorPS_IN input ) : SV_Target
  
 // ------------------------------------------------------
 // A shader that accepts Position and Texture
-// Used as a text overlay
+// Used as an overlay
 // ------------------------------------------------------
  
-struct TextVS_IN
+struct OverlayVS_IN
 {
 	float4 pos : POSITION;
 	float2 tex : TEXCOORD0;
 };
  
-struct TextPS_IN
+struct OverlayPS_IN
 {
 	float4 pos : SV_POSITION;
 	float2 tex : TEXCOORD0;
 };
  
-TextPS_IN TextVS( TextVS_IN input )
+OverlayPS_IN OverlayVS( OverlayVS_IN input )
 {
-	TextPS_IN output = (TextPS_IN)0;
+	OverlayPS_IN output = (OverlayPS_IN)0;
 	output.pos = input.pos;
 	output.tex = input.tex;
 	return output;
 }
  
-float4 TextPS( TextPS_IN input ) : SV_Target
+float4 OverlayPS( OverlayPS_IN input ) : SV_Target
 {
 	float4 color =  g_Overlay.Sample(g_samLinear, input.tex);
 	return color;
@@ -84,16 +70,6 @@ float4 TextPS( TextPS_IN input ) : SV_Target
 // ------------------------------------------------------
 // Techniques
 // ------------------------------------------------------
- 
-technique11 Simple
-{
-	pass P0
-	{
-		SetGeometryShader( 0 );
-		SetVertexShader( CompileShader( vs_4_0, SimpleVS() ) );
-		SetPixelShader( CompileShader( ps_4_0, SimplePS() ) );
-	}
-}
  
 technique11 Color
 {
@@ -105,12 +81,12 @@ technique11 Color
 	}
 }
  
-technique11 2DOverlay
+technique11 Overlay
 {
 	pass P0
 	{
 		SetGeometryShader( 0 );
-		SetVertexShader( CompileShader( vs_4_0, TextVS() ) );
-		SetPixelShader( CompileShader( ps_4_0, TextPS() ) );
+		SetVertexShader( CompileShader( vs_4_0, OverlayVS() ) );
+		SetPixelShader( CompileShader( ps_4_0, OverlayPS() ) );
 	}
 }
